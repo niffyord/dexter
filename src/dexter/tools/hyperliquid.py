@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import sys
 from pathlib import Path
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from langchain.tools import tool
@@ -113,6 +114,10 @@ def get_funding_rates(
     start_time: Optional[int] = None,
 ) -> Dict[str, Any]:
     """Fetch current (and optionally historical) perpetual funding rates."""
+    if include_history and start_time is None:
+        start_time = int(
+            (datetime.utcnow() - timedelta(hours=24)).timestamp() * 1000
+        )
     request = GetFundingRatesRequest(
         asset=asset,
         include_history=include_history,

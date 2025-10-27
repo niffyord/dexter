@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from typing import List
 
 from langchain_core.messages import AIMessage
@@ -39,7 +40,7 @@ class Agent:
             self.logger._log(f"Planning failed: {e}")
             tasks = [Task(id=1, description=query, done=False)]
         
-        task_dicts = [task.dict() for task in tasks]
+        task_dicts = [task.model_dump() for task in tasks]
         self.logger.log_task_list(task_dicts)
         return tasks
 
@@ -84,7 +85,11 @@ class Agent:
         
         # Get tool schema info
         tool_description = tool.description
-        tool_schema = tool.args_schema.schema() if hasattr(tool, 'args_schema') and tool.args_schema else {}
+        tool_schema = (
+            tool.args_schema.model_json_schema()
+            if hasattr(tool, "args_schema") and tool.args_schema
+            else {}
+        )
         
         prompt = f"""
         Task: "{task_desc}"
@@ -100,11 +105,22 @@ class Agent:
             response = call_llm(prompt, system_prompt=get_tool_args_system_prompt(), output_schema=OptimizedToolArgs)
             # Handle case where LLM returns dict directly instead of OptimizedToolArgs
             if isinstance(response, dict):
-                return response if response else initial_args
-            return response.arguments
+                optimized = response if response else initial_args
+            else:
+                optimized = response.arguments
         except Exception as e:
             self.logger._log(f"Argument optimization failed: {e}, using original args")
-            return initial_args
+            optimized = initial_args
+
+        # Tool-specific safeguards
+        if tool_name == "get_funding_rates":
+            include_history = bool(optimized.get("include_history"))
+            start_time = optimized.get("start_time")
+            if include_history and not start_time:
+                default_start = datetime.now(timezone.utc) - timedelta(hours=24)
+                optimized["start_time"] = int(default_start.timestamp() * 1000)
+
+        return optimized
 
     # ---------- tool execution ----------
     def _execute_tool(self, tool, tool_name: str, inp_args):
