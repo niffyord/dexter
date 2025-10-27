@@ -77,9 +77,23 @@ def get_user_fees(user: Optional[str] = None) -> Dict[str, Any]:
 
 
 @tool(args_schema=GetMarketDataRequest)
-def get_market_data(asset: str) -> Dict[str, Any]:
-    """Pull the latest Hyperliquid market snapshot (price, open interest, etc.) for an asset."""
-    request = GetMarketDataRequest(asset=asset)
+def get_market_data(
+    asset: str,
+    short_interval: Optional[CandleInterval] = None,
+    short_bars: Optional[int] = None,
+    long_interval: Optional[CandleInterval] = None,
+    long_bars: Optional[int] = None,
+    tail_length: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Pull the latest Hyperliquid market snapshot (price, OI, funding, and technicals)."""
+    request = GetMarketDataRequest(
+        asset=asset,
+        short_interval=short_interval,
+        short_bars=short_bars,
+        long_interval=long_interval,
+        long_bars=long_bars,
+        tail_length=tail_length,
+    )
     return _invoke_mcp_tool("get_market_data", request)
 
 
