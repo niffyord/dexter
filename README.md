@@ -1,127 +1,119 @@
 # Dexter 🤖
 
-Dexter is an autonomous financial research agent that thinks, plans, and learns as it works. It performs analysis using task planning, self-reflection, and real-time market data. Think Claude Code, but built specifically for financial research.
-
+Dexter is an autonomous Hyperliquid crypto futures agent that thinks, plans, and executes from end to end. It can look up market structure, inspect your account, reason about funding and risk, and—when asked—submit, amend, or cancel orders on the Hyperliquid exchange. Think of it as a focused teammate that understands derivative trading workflows instead of equity research.
 
 <img width="979" height="651" alt="Screenshot 2025-10-14 at 6 12 35 PM" src="https://github.com/user-attachments/assets/5a2859d4-53cf-4638-998a-15cef3c98038" />
 
 ## Overview
 
-Dexter takes complex financial questions and turns them into clear, step-by-step research plans. It runs those tasks using live market data, checks its own work, and refines the results until it has a confident, data-backed answer.  
+Dexter converts trading objectives into clear, auditable plans. It selects the right Hyperliquid MCP tools, optimises arguments, validates results, and synthesises a concise response with the numbers that matter. Each run is bounded by strict safety limits and loop detection so the agent never free-runs.
 
-It’s not just another chatbot.  It’s an agent that plans ahead, verifies its progress, and keeps iterating until the job is done.
+**Key Capabilities**
+- **Structured Trade Planning** – break complex goals into market checks, risk analysis, and execution steps.
+- **Hyperliquid MCP Integration** – call the same tooling exposed by the `hyperliquid-mcp` server for market data, leverage control, and order management.
+- **Self-Validation** – confirm whether each task is complete before moving on, catching missing data or failed orders.
+- **Execution Logging** – highlight risky calls like `place_order` or `withdraw` and show compact summaries of tool outputs.
 
-**Key Capabilities:**
-- **Intelligent Task Planning**: Automatically decomposes complex queries into structured research steps
-- **Autonomous Execution**: Selects and executes the right tools to gather financial data
-- **Self-Validation**: Checks its own work and iterates until tasks are complete
-- **Real-Time Financial Data**: Access to income statements, balance sheets, and cash flow statements
-- **Safety Features**: Built-in loop detection and step limits to prevent runaway execution
+## Prerequisites
 
-[![Twitter Follow](https://img.shields.io/twitter/follow/virattt?style=social)](https://twitter.com/virattt)
-
-### Prerequisites
-
-- Python 3.10 or higher
+- Python 3.10 or newer
 - [uv](https://github.com/astral-sh/uv) package manager
 - OpenAI API key (get [here](https://platform.openai.com/api-keys))
-- Financial Datasets API key (get [here](https://financialdatasets.ai))
+- Hyperliquid credentials:
+  - `HYPERLIQUID_PRIVATE_KEY` – required for trading actions
+  - `HYPERLIQUID_USER_ADDRESS` – optional override for account queries
+  - `HYPERLIQUID_TESTNET` – set to `true` to stay on the testnet while iterating
 
-### Installation
+> ⚠️ **Safety**  
+> Always test on Hyperliquid testnet first. The agent will happily place or cancel orders if instructed and your environment is configured for trading.
 
-1. Clone the repository:
+## Installation
+
 ```bash
 git clone https://github.com/virattt/dexter.git
 cd dexter
-```
-
-2. Install dependencies with uv:
-```bash
 uv sync
 ```
 
-3. Set up your environment variables:
-```bash
-# Copy the example environment file
-cp env.example .env
+Copy the environment template and add your keys:
 
-# Edit .env and add your API keys
-# OPENAI_API_KEY=your-openai-api-key
-# FINANCIAL_DATASETS_API_KEY=your-financial-datasets-api-key
+```bash
+cp env.example .env
 ```
 
-### Usage
+Then edit `.env` with:
 
-Run Dexter in interactive mode:
+```
+OPENAI_API_KEY=sk-...
+HYPERLIQUID_PRIVATE_KEY=0x...
+HYPERLIQUID_USER_ADDRESS=0x...(optional)
+HYPERLIQUID_TESTNET=true
+```
+
+## Usage
+
+Start the interactive CLI:
+
 ```bash
 uv run dexter-agent
 ```
 
-### Example Queries
+Example prompts:
 
-Try asking Dexter questions like:
-- "What was Apple's revenue growth over the last 4 quarters?"
-- "Compare Microsoft and Google's operating margins for 2023"
-- "Analyze Tesla's cash flow trends over the past year"
-- "What is Amazon's debt-to-equity ratio based on recent financials?"
-
-Dexter will automatically:
-1. Break down your question into research tasks
-2. Fetch the necessary financial data
-3. Perform calculations and analysis
-4. Provide a comprehensive, data-rich answer
+- “Show my current BTC and SOL positions on Hyperliquid testnet.”
+- “What are the last 24h funding rates for ETH and how do they impact a long?”
+- “Place a limit buy for 0.25 ETH at 3200 using ALO and confirm the order ID.”
+- “Cancel all open orders on ARB then report the remaining exposure.”
 
 ## Architecture
 
-Dexter uses a multi-agent architecture with specialized components:
+Dexter keeps the same multi-agent loop with a new tool stack:
 
-- **Planning Agent**: Analyzes queries and creates structured task lists
-- **Action Agent**: Selects appropriate tools and executes research steps
-- **Validation Agent**: Verifies task completion and data sufficiency
-- **Answer Agent**: Synthesizes findings into comprehensive responses
+- **Planning Agent** – drafts atomised tasks aligned with Hyperliquid MCP tools.
+- **Action Agent** – selects and parameterises the best tool call at each step.
+- **Validation Agent** – decides if the task is complete or needs another pass.
+- **Answer Agent** – summarises findings, actions, and risks in plain text.
+
+The tool layer (`src/dexter/tools/hyperliquid.py`) wraps the MCP server defined in `hyperliquid-mcp/`, reusing its Pydantic request models and async clients.
 
 ## Project Structure
 
 ```
 dexter/
 ├── src/
-│   ├── dexter/
-│   │   ├── agent.py      # Main agent orchestration logic
-│   │   ├── model.py      # LLM interface
-│   │   ├── tools.py      # Financial data tools
-│   │   ├── prompts.py    # System prompts for each component
-│   │   ├── schemas.py    # Pydantic models
-│   │   ├── utils/        # Utility functions
-│   │   └── cli.py        # CLI entry point
+│   └── dexter/
+│       ├── agent.py         # Core loop and safety rails
+│       ├── cli.py           # Interactive prompt interface
+│       ├── model.py         # LLM binding to OpenAI
+│       ├── prompts.py       # Trading-focused system prompts
+│       ├── schemas.py       # Pydantic schemas for LLM outputs
+│       ├── tools/           # Hyperliquid MCP tool adapters
+│       └── utils/           # UI + logging helpers
+├── hyperliquid-mcp/         # Bundled MCP server implementation
 ├── pyproject.toml
 └── uv.lock
 ```
 
 ## Configuration
 
-Dexter supports configuration via the `Agent` class initialization:
-
 ```python
 from dexter.agent import Agent
 
 agent = Agent(
-    max_steps=20,              # Global safety limit
-    max_steps_per_task=5       # Per-task iteration limit
+    max_steps=20,          # Global safety limit
+    max_steps_per_task=5   # Cap retries per task
 )
 ```
 
-## How to Contribute
+Tune those limits if you are orchestrating longer market analyses or more conservative execution.
+
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
-
-**Important**: Please keep your pull requests small and focused.  This will make it easier to review and merge.
-
+3. Make focused commits
+4. Open a pull request describing the change and testing
 
 ## License
 
-This project is licensed under the MIT License.
-
+MIT License.

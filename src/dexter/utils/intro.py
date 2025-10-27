@@ -30,7 +30,7 @@ def print_intro():
     
     print(dexter_art)
     print()
-    print("Your AI assistant for financial analysis.")
-    print("Ask me any questions. Type 'exit' or 'quit' to end.")
+    print("Hyperliquid crypto futures copilot. Test on testnet first.")
+    print("Ask trading or market questions. Type 'exit' or 'quit' to end.")
     print()
 

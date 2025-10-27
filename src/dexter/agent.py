@@ -118,7 +118,16 @@ class Agent:
     # ---------- confirm action ----------
     def confirm_action(self, tool: str, input_str: str) -> bool:
         # In production you'd ask the user; here we just log and auto-confirm
-        # Risky tools are not implemented in this version.
+        risky_tools = {
+            "place_order",
+            "withdraw",
+            "cancel_all_orders",
+            "bulk_cancel_orders",
+            "modify_order",
+            "update_leverage",
+        }
+        if tool in risky_tools:
+            self.logger.log_risky(tool, input_str)
         return True
 
     # ---------- main loop ----------

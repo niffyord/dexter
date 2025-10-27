@@ -1,7 +1,7 @@
 {
   "name": "dexter-agent",
   "version": "0.1.0",
-  "description": "An autonomous financial research agent that performs deep analysis using task planning, introspection, and real-time market data. Inspired by Claude Code, but built specifically for financial research.",
+  "description": "An autonomous Hyperliquid crypto futures agent that plans trades, gathers market data, and can execute orders through MCP tooling.",
   "main": "index.js",
   "bin": {
     "dexter-agent": "./index.js"
